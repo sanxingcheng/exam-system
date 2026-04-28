@@ -1,0 +1,49 @@
+body {
+  margin: 0;
+  background: #f5f7fb;
+  color: #1f2937;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.brand {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.nav {
+  flex: 1;
+}
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.card {
+  margin-bottom: 16px;
+}
+
+@media (max-width: 720px) {
+  .header {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 8px;
+  }
+
+  .nav {
+    width: 100%;
+    overflow-x: auto;
+  }
+}
