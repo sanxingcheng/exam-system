@@ -1,7 +1,7 @@
 <template>
   <el-container class="app-shell">
     <el-header v-if="session.loggedIn" class="header">
-      <div class="brand">区块链考试系统</div>
+      <div class="brand">考试系统</div>
       <el-menu mode="horizontal" router class="nav">
         <el-menu-item index="/">题库</el-menu-item>
         <el-menu-item index="/questions">题目</el-menu-item>

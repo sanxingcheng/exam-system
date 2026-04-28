@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.pdfbox.Loader;
@@ -78,12 +79,21 @@ public class BlockchainPdfImportService {
     QuestionBank bank =
         bankRepository.findByName(bankName).orElseThrow(() -> new BusinessException("题库不存在"));
     String sha256 = sha256(pdfPath);
-    if (importBatchRepository.existsByQuestionBankIdAndImporterTypeAndFileSha256(
-        bank.getId(), IMPORTER_TYPE, sha256)) {
+    Optional<ImportBatch> existingBatch =
+        importBatchRepository.findByQuestionBankIdAndImporterTypeAndFileSha256(
+            bank.getId(), IMPORTER_TYPE, sha256);
+    if (existingBatch.isPresent() && questionRepository.countByQuestionBankId(bank.getId()) > 0) {
       return new ImportResult(0, "文件已导入，跳过重复导入");
+    }
+    if (existingBatch.isPresent()) {
+      importBatchRepository.delete(existingBatch.get());
+      importBatchRepository.flush();
     }
     String text = readPdf(pdfPath);
     List<ParsedQuestion> parsedQuestions = parseQuestions(text);
+    if (parsedQuestions.isEmpty()) {
+      throw new BusinessException("PDF 未解析出题目，请检查文件格式或解析规则");
+    }
     int saved = 0;
     for (ParsedQuestion parsed : parsedQuestions) {
       Question question = new Question();

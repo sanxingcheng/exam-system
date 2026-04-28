@@ -7,6 +7,7 @@ import com.example.examsystem.service.BlockchainPdfImportService;
 import com.example.examsystem.service.BlockchainPdfImportService.ImportResult;
 import com.example.examsystem.service.QuestionService;
 import com.example.examsystem.service.QuestionService.QuestionDto;
+import com.example.examsystem.service.QuestionService.QuestionPage;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Question bank browsing and administrator maintenance APIs. */
@@ -37,8 +39,11 @@ public class QuestionController {
   }
 
   @GetMapping("/question-banks/{bankId}/questions")
-  public ApiResponse<List<QuestionDto>> questions(@PathVariable Long bankId) {
-    return ApiResponse.ok(questionService.listQuestions(bankId));
+  public ApiResponse<QuestionPage> questions(
+      @PathVariable Long bankId,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size) {
+    return ApiResponse.ok(questionService.listQuestions(bankId, page, size));
   }
 
   @GetMapping("/questions/{questionId}")

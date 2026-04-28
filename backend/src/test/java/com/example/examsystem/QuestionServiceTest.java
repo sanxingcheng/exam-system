@@ -1,6 +1,7 @@
 package com.example.examsystem;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.examsystem.domain.Enums.AnswerSource;
 import com.example.examsystem.domain.Enums.QuestionType;
@@ -48,5 +49,26 @@ class QuestionServiceTest {
     Long questionId = question.getId();
     assertThatThrownBy(() -> questionService.fillAnswer(questionId, "B", "解析"))
         .hasMessageContaining("禁止修改");
+  }
+
+  @Test
+  void listQuestionsReturnsPagedResult() {
+    QuestionBank bank = new QuestionBank();
+    bank.setName("page-test-bank");
+    bank.setBankType("TEST");
+    bank = bankRepository.save(bank);
+
+    for (int index = 0; index < 3; index++) {
+      Question question = new Question();
+      question.setQuestionBank(bank);
+      question.setType(QuestionType.SINGLE_CHOICE);
+      question.setContent("分页题目 " + index);
+      questionRepository.save(question);
+    }
+
+    var page = questionService.listQuestions(bank.getId(), 0, 2);
+
+    assertThat(page.items()).hasSize(2);
+    assertThat(page.total()).isEqualTo(3);
   }
 }

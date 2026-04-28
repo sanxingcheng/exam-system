@@ -2,7 +2,16 @@
   <div class="page">
     <el-card class="card">
       <template #header>管理员题库维护</template>
-      <el-button type="primary" @click="importPdf">导入当前 PDF</el-button>
+      <el-form inline>
+        <el-form-item label="当前题库">
+          <el-select v-model="selectedBankId" placeholder="请选择题库" style="width: 260px" @change="changeBank">
+            <el-option v-for="bank in banks" :key="bank.id" :label="bank.name" :value="bank.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="importing" @click="importPdf">导入当前 PDF</el-button>
+        </el-form-item>
+      </el-form>
       <span class="tip">导入完成后再次导入会根据文件指纹跳过。</span>
     </el-card>
     <el-card>
@@ -18,6 +27,14 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        class="pager"
+        layout="prev, pager, next, total"
+        :current-page="page + 1"
+        :page-size="size"
+        :total="total"
+        @current-change="changePage"
+      />
     </el-card>
     <el-dialog v-model="dialogVisible" title="维护答案" width="min(720px, 92vw)">
       <p>{{ current?.content }}</p>
@@ -50,21 +67,64 @@ import { api } from '../api'
 import { useSessionStore } from '../stores'
 
 const session = useSessionStore()
+const banks = ref([])
+const selectedBankId = ref(session.currentBankId)
 const questions = ref([])
+const page = ref(0)
+const size = ref(20)
+const total = ref(0)
 const current = ref(null)
 const dialogVisible = ref(false)
 const answerText = ref('')
 const explanation = ref('')
+const importing = ref(false)
+
+async function loadBanks() {
+  banks.value = (await api.get('/question-banks')).data
+  if (!selectedBankId.value && banks.value.length > 0) {
+    changeBank(banks.value[0].id)
+  }
+}
 
 async function load() {
-  if (!session.currentBankId) return
-  questions.value = (await api.get(`/question-banks/${session.currentBankId}/questions`)).data
+  if (!selectedBankId.value) {
+    questions.value = []
+    total.value = 0
+    return
+  }
+  const response = (await api.get(`/question-banks/${selectedBankId.value}/questions`, {
+    params: { page: page.value, size: size.value },
+  })).data
+  questions.value = response.items
+  total.value = response.total
+}
+
+function changeBank(bankId) {
+  selectedBankId.value = bankId
+  page.value = 0
+  session.setBank(bankId)
+  load()
+}
+
+async function changePage(currentPage) {
+  page.value = currentPage - 1
+  await load()
 }
 
 async function importPdf() {
-  const result = (await api.post('/admin/import/blockchain-pdf')).data
-  ElMessage.success(result.report)
-  await load()
+  importing.value = true
+  try {
+    const result = (await api.post('/admin/import/blockchain-pdf')).data
+    ElMessage.success(result.report)
+    if (!selectedBankId.value && banks.value.length > 0) {
+      changeBank(banks.value[0].id)
+    }
+    await load()
+  } catch (error) {
+    ElMessage.error(error.message)
+  } finally {
+    importing.value = false
+  }
 }
 
 function selectQuestion(row) {
@@ -88,12 +148,20 @@ async function saveAnswer() {
   await load()
 }
 
-onMounted(load)
+onMounted(async () => {
+  await loadBanks()
+  await load()
+})
 </script>
 
 <style scoped>
 .tip {
   margin-left: 12px;
   color: #6b7280;
+}
+
+.pager {
+  margin-top: 16px;
+  justify-content: flex-end;
 }
 </style>

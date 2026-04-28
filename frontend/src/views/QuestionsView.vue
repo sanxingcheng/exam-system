@@ -20,6 +20,15 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        v-if="session.currentBankId"
+        class="pager"
+        layout="prev, pager, next, total"
+        :current-page="page + 1"
+        :page-size="size"
+        :total="total"
+        @current-change="changePage"
+      />
     </el-card>
   </div>
 </template>
@@ -32,10 +41,30 @@ import { useSessionStore } from '../stores'
 
 const session = useSessionStore()
 const questions = ref([])
+const page = ref(0)
+const size = ref(20)
+const total = ref(0)
+
+async function ensureBankSelected() {
+  if (session.currentBankId) return
+  const banks = (await api.get('/question-banks')).data
+  if (banks.length > 0) {
+    session.setBank(banks[0].id)
+  }
+}
 
 async function load() {
   if (!session.currentBankId) return
-  questions.value = (await api.get(`/question-banks/${session.currentBankId}/questions`)).data
+  const response = (await api.get(`/question-banks/${session.currentBankId}/questions`, {
+    params: { page: page.value, size: size.value },
+  })).data
+  questions.value = response.items
+  total.value = response.total
+}
+
+async function changePage(currentPage) {
+  page.value = currentPage - 1
+  await load()
 }
 
 async function markHard(questionId) {
@@ -43,5 +72,15 @@ async function markHard(questionId) {
   ElMessage.success('已标为困难题')
 }
 
-onMounted(load)
+onMounted(async () => {
+  await ensureBankSelected()
+  await load()
+})
 </script>
+
+<style scoped>
+.pager {
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+</style>

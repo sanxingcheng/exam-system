@@ -14,6 +14,8 @@ import com.example.examsystem.repository.QuestionMarkRepository;
 import com.example.examsystem.repository.QuestionOptionRepository;
 import com.example.examsystem.repository.QuestionRepository;
 import java.util.List;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,10 +48,14 @@ public class QuestionService {
   }
 
   @Transactional(readOnly = true)
-  public List<QuestionDto> listQuestions(Long bankId) {
-    return questionRepository.findByQuestionBankIdOrderByIdAsc(bankId).stream()
-        .map(this::toDto)
-        .toList();
+  public QuestionPage listQuestions(Long bankId, int page, int size) {
+    int safePage = Math.max(page, 0);
+    int safeSize = Math.min(Math.max(size, 1), 100);
+    var questions =
+        questionRepository.findByQuestionBankId(
+            bankId, PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.ASC, "id")));
+    List<QuestionDto> items = questions.stream().map(this::toDto).toList();
+    return new QuestionPage(items, questions.getTotalElements(), questions.getNumber(), questions.getSize());
   }
 
   @Transactional(readOnly = true)
@@ -143,4 +149,6 @@ public class QuestionService {
       String explanation) {}
 
   public record OptionDto(String optionKey, String content) {}
+
+  public record QuestionPage(List<QuestionDto> items, long total, int page, int size) {}
 }
