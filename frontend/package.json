@@ -12,6 +12,7 @@
     "@vitejs/plugin-vue": "latest",
     "axios": "latest",
     "element-plus": "latest",
+    "markdown-it": "^14.1.1",
     "pinia": "latest",
     "vite": "latest",
     "vue": "latest",

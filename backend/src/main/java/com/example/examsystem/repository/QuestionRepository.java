@@ -16,6 +16,21 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
   Page<Question> findByQuestionBankId(Long questionBankId, Pageable pageable);
 
+  @Query(
+      """
+      select q from Question q
+      where q.questionBank.id = :bankId
+        and (:type is null or q.type = :type)
+        and (:category is null or q.knowledgeArea = :category)
+        and (:keyword is null or lower(q.content) like lower(concat('%', :keyword, '%')))
+      """)
+  Page<Question> searchByBank(
+      @Param("bankId") Long bankId,
+      @Param("type") QuestionType type,
+      @Param("category") String category,
+      @Param("keyword") String keyword,
+      Pageable pageable);
+
   List<Question> findByQuestionBankIdAndHasAnswerTrue(Long questionBankId);
 
   @Query(

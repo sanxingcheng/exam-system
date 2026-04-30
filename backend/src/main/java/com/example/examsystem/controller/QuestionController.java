@@ -42,8 +42,11 @@ public class QuestionController {
   public ApiResponse<QuestionPage> questions(
       @PathVariable Long bankId,
       @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "20") int size) {
-    return ApiResponse.ok(questionService.listQuestions(bankId, page, size));
+      @RequestParam(defaultValue = "20") int size,
+      @RequestParam(required = false) String type,
+      @RequestParam(required = false) String category,
+      @RequestParam(required = false) String keyword) {
+    return ApiResponse.ok(questionService.listQuestions(bankId, page, size, type, category, keyword));
   }
 
   @GetMapping("/questions/{questionId}")

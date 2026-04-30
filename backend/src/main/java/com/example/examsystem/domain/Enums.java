@@ -24,6 +24,7 @@ public final class Enums {
   }
 
   public enum AnswerSource {
+    IMPORTED_FROM_MOCK,
     IMPORTED_LOCKED,
     ADMIN_FILLED
   }

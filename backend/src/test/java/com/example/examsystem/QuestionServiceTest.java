@@ -1,6 +1,5 @@
 package com.example.examsystem;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.examsystem.domain.Enums.AnswerSource;
@@ -25,7 +24,7 @@ class QuestionServiceTest {
   @Autowired private QuestionAnswerRepository answerRepository;
 
   @Test
-  void lockedImportedAnswerCannotBeChanged() {
+  void importedMockAnswerCanBeCorrectedByAdmin() {
     QuestionBank bank = new QuestionBank();
     bank.setName("locked-test-bank");
     bank.setBankType("TEST");
@@ -47,8 +46,9 @@ class QuestionServiceTest {
     answerRepository.save(answer);
 
     Long questionId = question.getId();
-    assertThatThrownBy(() -> questionService.fillAnswer(questionId, "B", "解析"))
-        .hasMessageContaining("禁止修改");
+    var updated = questionService.fillAnswer(questionId, "B", "解析");
+
+    assertThat(updated.answer()).isEqualTo("B");
   }
 
   @Test
@@ -66,9 +66,63 @@ class QuestionServiceTest {
       questionRepository.save(question);
     }
 
-    var page = questionService.listQuestions(bank.getId(), 0, 2);
+    var page = questionService.listQuestions(bank.getId(), 0, 2, null, null, null);
 
     assertThat(page.items()).hasSize(2);
     assertThat(page.total()).isEqualTo(3);
+  }
+
+  @Test
+  void listQuestionsFiltersByTypeAndKeyword() {
+    QuestionBank bank = new QuestionBank();
+    bank.setName("filter-test-bank");
+    bank.setBankType("TEST");
+    bank = bankRepository.save(bank);
+
+    Question trueFalse = new Question();
+    trueFalse.setQuestionBank(bank);
+    trueFalse.setType(QuestionType.TRUE_FALSE);
+    trueFalse.setContent("区块链数据不可篡改，判断对错");
+    questionRepository.save(trueFalse);
+
+    Question singleChoice = new Question();
+    singleChoice.setQuestionBank(bank);
+    singleChoice.setType(QuestionType.SINGLE_CHOICE);
+    singleChoice.setContent("数据库索引是什么");
+    questionRepository.save(singleChoice);
+
+    var page = questionService.listQuestions(bank.getId(), 0, 20, "TRUE_FALSE", null, "不可篡改");
+
+    assertThat(page.items()).hasSize(1);
+    assertThat(page.items().get(0).type()).isEqualTo("TRUE_FALSE");
+  }
+
+  @Test
+  void listQuestionsFiltersBySmartCategory() {
+    QuestionBank bank = new QuestionBank();
+    bank.setName("category-test-bank");
+    bank.setBankType("TEST");
+    bank = bankRepository.save(bank);
+
+    Question opsQuestion = new Question();
+    opsQuestion.setQuestionBank(bank);
+    opsQuestion.setType(QuestionType.TRUE_FALSE);
+    opsQuestion.setContent("智能合约部署完成后地址由哈希计算得出");
+    opsQuestion.setKnowledgeArea("区块链应用操作");
+    questionRepository.save(opsQuestion);
+
+    Question testQuestion = new Question();
+    testQuestion.setQuestionBank(bank);
+    testQuestion.setType(QuestionType.TRUE_FALSE);
+    testQuestion.setContent("设计测试用例时需要覆盖核心链路");
+    testQuestion.setKnowledgeArea("区块链测试");
+    questionRepository.save(testQuestion);
+
+    var page =
+        questionService.listQuestions(
+            bank.getId(), 0, 20, "TRUE_FALSE", "区块链应用操作", null);
+
+    assertThat(page.items()).hasSize(1);
+    assertThat(page.items().get(0).knowledgeArea()).isEqualTo("区块链应用操作");
   }
 }
